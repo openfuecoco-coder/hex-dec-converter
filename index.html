@@ -52,48 +52,28 @@
         function convert(source) {
             const val = document.getElementById(source).value;
             let bytes = [];
-            let valid = true;
-
+            
             try {
                 if (source === 'ascii') {
                     for (let i = 0; i < val.length; i++) bytes.push(val.charCodeAt(i));
                 } else if (source === 'hex') {
-                    if (!isValidHex(val)) { valid = false; } else {
-                        const hex = val.replace(/\s+/g, '');
-                        if (hex.length % 2 !== 0) { valid = false; } else {
-                            for (let i = 0; i < hex.length; i += 2) bytes.push(parseInt(hex.substr(i, 2), 16));
-                        }
-                    }
+                    if (!isValidHex(val)) return;
+                    const hex = val.replace(/\s+/g, '');
+                    for (let i = 0; i < hex.length; i += 2) bytes.push(parseInt(hex.substr(i, 2), 16));
                 } else if (source === 'dec') {
-                    if (!isValidDec(val)) { valid = false; } } else {
+                    if (!isValidDec(val)) return;
                     bytes = val.trim().split(/\s+/).filter(Boolean).map(Number);
-                    if (bytes.some(isNaN) || bytes.some(b => b < 0 || b > 255)) { valid = false; }
                 } else if (source === 'bin') {
-                    if (!isValidBin(val)) { valid = false; } else {
-                        bytes = val.trim().split(/\s+/).filter(Boolean).map(b => parseInt(b, 2));
-                        if (bytes.some(isNaN) || bytes.some(b => b < 0 || b > 255)) { valid = false; }
-                    }
-                }
-
-                if (!valid) {
-                    // Clear all but the source input on invalid input
-                    const ids = ['ascii', 'hex', 'dec', 'bin'];
-                    ids.forEach(id => { if (id !== source) document.getElementById(id).value = ''; });
-                    return; // Stop further conversion
+                    if (!isValidBin(val)) return;
+                    bytes = val.trim().split(/\s+/).filter(Boolean).map(b => parseInt(b, 2));
                 }
                 
-                // Clear all outputs first if input is valid
-                const ids = ['ascii', 'hex', 'dec', 'bin'];
-                ids.forEach(id => { if (id !== source) document.getElementById(id).value = ''; });
-
                 if (source !== 'ascii') document.getElementById('ascii').value = bytes.map(b => String.fromCharCode(b)).join('');
                 if (source !== 'hex') document.getElementById('hex').value = bytes.map(b => b.toString(16).padStart(2, '0')).join(' ');
                 if (source !== 'dec') document.getElementById('dec').value = bytes.join(' ');
                 if (source !== 'bin') document.getElementById('bin').value = bytes.map(b => b.toString(2).padStart(8, '0')).join(' ');
             } catch(e) {
-                // Fallback for any unexpected errors during conversion
-                const ids = ['ascii', 'hex', 'dec', 'bin'];
-                ids.forEach(id => { if (id !== source) document.getElementById(id).value = ''; });
+                console.error(e);
             }
         }
         function copy(id) {
