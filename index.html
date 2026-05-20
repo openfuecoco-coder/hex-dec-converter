@@ -2,18 +2,105 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <title>轉換器</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HEX/DEC/BIN/ASCII 轉換器</title>
     <style>
-        body { font-family: sans-serif; background-color: #FDFBF7; color: #4A4036; display: flex; justify-content: center; padding: 20px; }
-        .container { background-color: #E8E4D9; padding: 2rem; border-radius: 12px; width: 100%; max-width: 500px; }
-        textarea { width: 100%; background: #FDFBF7; border: 1px solid #C4B5A5; }
-        button { background-color: #C4B5A5; color: #FDFBF7; border: none; padding: 10px; cursor: pointer; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #FDFBF7; color: #4A4036; display: flex; justify-content: center; padding: 20px; min-height: 100vh; box-sizing: border-box; }
+        .container { background-color: #E8E4D9; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); width: 100%; max-width: 600px; }
+        h1 { text-align: center; color: #4A4036; margin-bottom: 1.5rem; }
+        .group { margin-bottom: 1.5rem; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; color: #4A4036; }
+        textarea { width: 100%; padding: 10px; border: 1px solid #C4B5A5; border-radius: 6px; font-family: monospace; resize: vertical; box-sizing: border-box; background: #FDFBF7; color: #4A4036; }
+        .copy-btn { margin-top: 5px; background: #C4B5A5; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 0.9rem; color: #FDFBF7; transition: background 0.2s; float: right; }
+        .copy-btn:hover { background: #A39688; }
+        .clear-float { clear: both; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>轉換器</h1>
-        <textarea id="in" placeholder="輸入內容..."></textarea>
+        <h1>HEX/DEC/BIN/ASCII 轉換器</h1>
+        <div class="group">
+            <label>ASCII</label>
+            <textarea id="ascii" oninput="convert('ascii')"></textarea>
+            <button class="copy-btn" onclick="copy('ascii')">複製</button>
+            <div class="clear-float"></div>
+        </div>
+        <div class="group">
+            <label>HEX</label>
+            <textarea id="hex" oninput="convert('hex')"></textarea>
+            <button class="copy-btn" onclick="copy('hex')">複製</button>
+            <div class="clear-float"></div>
+        </div>
+        <div class="group">
+            <label>DEC</label>
+            <textarea id="dec" oninput="convert('dec')"></textarea>
+            <button class="copy-btn" onclick="copy('dec')">複製</button>
+            <div class="clear-float"></div>
+        </div>
+        <div class="group">
+            <label>BIN</label>
+            <textarea id="bin" oninput="convert('bin')"></textarea>
+            <button class="copy-btn" onclick="copy('bin')">複製</button>
+            <div class="clear-float"></div>
+        </div>
     </div>
+    <script>
+        function isValidHex(str) { return /^[0-9a-fA-F\s]*$/.test(str); }
+        function isValidDec(str) { return /^[0-9\s]*$/.test(str); }
+        function isValidBin(str) { return /^[01\s]*$/.test(str); }
+
+        function convert(source) {
+            const val = document.getElementById(source).value;
+            let bytes = [];
+            let valid = true;
+
+            try {
+                if (source === 'ascii') {
+                    for (let i = 0; i < val.length; i++) bytes.push(val.charCodeAt(i));
+                } else if (source === 'hex') {
+                    if (!isValidHex(val)) { valid = false; } else {
+                        const hex = val.replace(/\s+/g, '');
+                        if (hex.length % 2 !== 0) { valid = false; } else {
+                            for (let i = 0; i < hex.length; i += 2) bytes.push(parseInt(hex.substr(i, 2), 16));
+                        }
+                    }
+                } else if (source === 'dec') {
+                    if (!isValidDec(val)) { valid = false; } } else {
+                    bytes = val.trim().split(/\s+/).filter(Boolean).map(Number);
+                    if (bytes.some(isNaN) || bytes.some(b => b < 0 || b > 255)) { valid = false; }
+                } else if (source === 'bin') {
+                    if (!isValidBin(val)) { valid = false; } else {
+                        bytes = val.trim().split(/\s+/).filter(Boolean).map(b => parseInt(b, 2));
+                        if (bytes.some(isNaN) || bytes.some(b => b < 0 || b > 255)) { valid = false; }
+                    }
+                }
+
+                if (!valid) {
+                    // Clear all but the source input on invalid input
+                    const ids = ['ascii', 'hex', 'dec', 'bin'];
+                    ids.forEach(id => { if (id !== source) document.getElementById(id).value = ''; });
+                    return; // Stop further conversion
+                }
+                
+                // Clear all outputs first if input is valid
+                const ids = ['ascii', 'hex', 'dec', 'bin'];
+                ids.forEach(id => { if (id !== source) document.getElementById(id).value = ''; });
+
+                if (source !== 'ascii') document.getElementById('ascii').value = bytes.map(b => String.fromCharCode(b)).join('');
+                if (source !== 'hex') document.getElementById('hex').value = bytes.map(b => b.toString(16).padStart(2, '0')).join(' ');
+                if (source !== 'dec') document.getElementById('dec').value = bytes.join(' ');
+                if (source !== 'bin') document.getElementById('bin').value = bytes.map(b => b.toString(2).padStart(8, '0')).join(' ');
+            } catch(e) {
+                // Fallback for any unexpected errors during conversion
+                const ids = ['ascii', 'hex', 'dec', 'bin'];
+                ids.forEach(id => { if (id !== source) document.getElementById(id).value = ''; });
+            }
+        }
+        function copy(id) {
+            const el = document.getElementById(id);
+            el.select();
+            document.execCommand('copy');
+        }
+    </script>
 </body>
 </html>
